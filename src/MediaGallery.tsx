@@ -1,3 +1,23 @@
+// A simple cache implementation
+const cache: Record<string, any> = {};
+
+function withCache<T>(fn: (...args: any[]) => Promise<T>): (...args: any[]) => Promise<T> {
+  return async (...args: any[]): Promise<T> => {
+    const key = JSON.stringify(args);
+    if (!cache[key]) {
+      cache[key] = await fn(...args);
+    }
+    return cache[key];
+  };
+}
+```
+
+```typescript
+// Updated fetchImages with caching
+const fetchImagesCached = withCache(fetchImages);
+```
+
+```typescript
 import React, { useState, useEffect } from 'react';
 import './MediaGallery.css';
 
@@ -14,19 +34,32 @@ const fetchImages = async (): Promise<ImageFile[]> => {
   ];
 }
 
+const cache: Record<string, any> = {};
+function withCache<T>(fn: (...args: any[]) => Promise<T>): (...args: any[]) => Promise<T> {
+  return async (...args: any[]): Promise<T> => {
+    const key = JSON.stringify(args);
+    if (!cache[key]) {
+      cache[key] = await fn(...args);
+    }
+    return cache[key];
+  };
+}
+
+const fetchImagesCached = withCache(fetchImages);
+
 const MediaGallery: React.FC = () => {
   const [images, setImages] = useState<ImageFile[]>([]);
   
   useEffect(() => {
     const loadImages = async () => {
-      const fetchedImages = await fetchImages();
+      const fetchedImages = await fetchImagesCached();
       setImages(fetchedImages);
     }
 
     loadImages();
   }, []);
 
-  const handleFileUpload = async (files: FileList | null) => {
+  const handleFileUpload = async (files: FileList or null) => {
     if (files) {
       const uploadedImages = Array.from(files).map(file => {
         return uploadImage(file);
@@ -50,6 +83,7 @@ const MediaGallery: React.FC = () => {
   }
 
   const handleDragEnd = (result: any) => {
+    // Implementation for drag-end event
   }
 
   return (
