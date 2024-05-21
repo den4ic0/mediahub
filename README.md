@@ -24,7 +24,7 @@ MediaHub is a robust Node.js server designed to efficiently manage API requests 
 1. Clone the repository:
 
    ```sh
-   git clone https://github.com/your-username/mediahub.git
+   git clone https://github.com/den4ic0/mediahub.git
    cd mediahub
    ```
 
