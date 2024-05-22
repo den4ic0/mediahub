@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import './MediaGallery.css';
 
-interface ImageFile {
+interface Image {
   id: string;
   name: string;
   url: string;
 }
 
-const fetchImages = async (): Promise<ImageFile[]> => {
+const fetchGalleryImages = async (): Promise<Image[]> => {
   return [
     { id: '1', name: 'Image1.png', url: 'http://example.com/image1.png' },
     { id: '2', name: 'Image2.png', url: 'http://example.com/image2.png' },
@@ -16,66 +16,61 @@ const fetchImages = async (): Promise<ImageFile[]> => {
 
 const cache: Record<string, any> = {};
 
-function withCache<T>(fn: (...args: any[]) => Promise<T>): (...args: any[]) => Promise<T> {
+function withResponseCache<T>(func: (...args: any[]) => Promise<T>): (...args: any[]) => Promise<T> {
   return async (...args: any[]): Promise<T> => {
-    const key = JSON.stringify(args);
-    if (!cache[key]) {
-      cache[key] = await fn(...args);
+    const cacheKey = JSON.stringify(args);
+    if (!cache[cacheKey]) {
+      cache[cacheKey] = await func(...args);
     }
-    return cache[key];
+    return cache[cacheKey];
   };
 }
 
-const fetchImagesCached = withCache(fetchImages);
+const fetchImagesWithCache = withResponseCache(fetchGalleryImages);
 
 const MediaGallery: React.FC = () => {
-  const [images, setImages] = useState<ImageFile[]>([]);
+  const [galleryImages, setGalleryImages] = useState<Image[]>([]);
   
   useEffect(() => {
-    const loadImages = async () => {
-      const fetchedImages = await fetchImagesCached();
-      setImages(fetchedImages);
+    const loadGalleryImages = async () => {
+      const imagesFromCache = await fetchImagesWithCache();
+      setGalleryImages(imagesFromCache);
     };
 
-    loadImages();
+    loadGalleryImages();
   }, []);
 
-  const handleFileUpload = async (files: FileList | null) => {
-    if (files) {
-      const uploadedImages = Array.from(files).map(file => {
-        return uploadImage(file);
-      });
-
-      const newImages = await Promise.all(uploadedImages);
-      setImages(prevImages => [...prevImages, ...newImages]);
+  const handleImageUpload = async (fileList: FileList | null) => {
+    if (fileList) {
+      const uploadPromises = Array.from(fileList).map(file => uploadGalleryImage(file));
+      const newGalleryImages = await Promise.all(uploadPromises);
+      setGalleryImages(prevImages => [...prevImages, ...newGalleryImages]);
     }
   };
 
-  const uploadImage = async (file: File): Promise<ImageFile> => {
-    // This needs to be replaced with actual upload logic
+  const uploadGalleryImage = async (file: File): Promise<Image> => {
     return {
-      id: URL.createObjectURL(file), // Temporary unique ID
+      id: URL.createObjectURL(file),
       name: file.name,
       url: URL.createObjectURL(file),
     };
   };
 
-  const handleDelete = (imageId: string) => {
-    setImages(images.filter(image => image.id !== imageId));
+  const handleImageDelete = (imageId: string) => {
+    setGalleryImages(galleryImages.filter(image => image.id !== imageId));
   };
 
   const handleDragEnd = (result: any) => {
-    // Implementation for drag-end event
   };
 
   return (
     <div className="media-gallery">
-      <input type="file" multiple onChange={(e) => handleFileUpload(e.target.files)} />
+      <input type="file" multiple onChange={(e) => handleImageUpload(e.target.files)} />
       <div className="image-grid">
-        {images.map((image) => (
+        {galleryImages.map((image) => (
           <div key={image.id} className="image-item">
             <img src={image.url} alt={image.name} />
-            <button onClick={() => handleDelete(image.id)}>Delete</button>
+            <button onClick={() => handleImageDelete(image.id)}>Delete</button>
           </div>
         ))}
       </div>
