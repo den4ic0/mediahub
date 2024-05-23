@@ -10,25 +10,25 @@ interface MediaFile {
 }
 
 const useMediaManager = () => {
-  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const [mediaFilesList, setMediaFilesList] = useState<MediaFile[]>([]);
+  const [isFetching, setIsFetching] = useState<boolean>(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  const fetchMediaFiles = async () => {
-    setLoading(true);
+  const retrieveMediaFiles = async () => {
+    setIsFetching(true);
     try {
       const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/media`);
-      setMediaFiles(response.data);
-    } catch (err) {
-      setError('Failed to fetch media files.');
-      console.error(err);
+      setMediaFilesList(response.data);
+    } catch (error) {
+      setFetchError('Failed to fetch media files.');
+      console.error(error);
     } finally {
-      setLoading(false);
+      setIsFetching(false);
     }
   };
 
-  const uploadMediaFile = async (file: File, metadata: Record<string, any> = {}) => {
-    setLoading(true);
+  const addMediaFile = async (file: File, metadata: Record<string, any> = {}) => {
+    setIsFetching(true);
     const formData = new FormData();
     formData.append('file', file);
     formData.append('metadata', JSON.stringify(metadata));
@@ -39,33 +39,33 @@ const useMediaManager = () => {
           'Content-Type': 'multipart/form-data',
         },
       });
-      await fetchMediaFiles();
-    } catch (err) {
-      setError('Failed to upload file.');
-      console.error(err);
+      await retrieveMediaFiles();
+    } catch (error) {
+      setFetchError('Failed to upload file.');
+      console.error(error);
     } finally {
-      setLoading(false);
+      setIsFetching(false);
     }
   };
 
-  const updateMediaMetadata = async (id: string, metadata: Record<string, any>) => {
-    setLoading(true);
+  const modifyMediaMetadata = async (fileId: string, newMetadata: Record<string, any>) => {
+    setIsFetching(true);
     try {
-      await axios.put(`${process.env.REACT_APP_BACKEND_URL}/media/${id}/metadata`, { metadata });
-      await fetchMediaFiles();
-    } catch (err) {
-      setError('Failed to update metadata.');
-      console.error(err);
+      await axios.put(`${process.env.REACT_APP_BACKEND_URL}/media/${fileId}/metadata`, { metadata: newMetadata });
+      await retrieveMediaFiles();
+    } catch (error) {
+      setFetchError('Failed to update metadata.');
+      console.error(error);
     } finally {
-      setLoading(false);
+      setIsFetching(false);
     }
   };
 
   useEffect(() => {
-    fetchMediaFiles();
+    retrieveMediaFiles();
   }, []);
 
-  return { mediaFiles, uploadMediaFile, updateMediaMetadata, loading, error };
+  return { mediaFilesList, addMediaFile, modifyMediaMetadata, isLoading: isFetching, fetchError };
 };
 
 export default useMediaManager;
