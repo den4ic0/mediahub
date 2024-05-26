@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 interface MediaFile {
   id: string;
@@ -14,13 +14,22 @@ const useMediaManager = () => {
   const [isFetching, setIsFetching] = useState<boolean>(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
+  const handleAxiosError = (error: unknown) => {
+    if (axios.isAxiosError(error)) {
+      return error.response?.data?.message || 'An unexpected error occurred';
+    }
+    return 'Non-Axios error occurred';
+  }
+
   const retrieveMediaFiles = async () => {
     setIsFetching(true);
+    setFetchError(null);
     try {
       const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/media`);
       setMediaFilesList(response.data);
     } catch (error) {
-      setFetchError('Failed to fetch media files.');
+      const errorMessage = handleAxiosError(error);
+      setFetchError(`Failed to fetch media files: ${errorMessage}`);
       console.error(error);
     } finally {
       setIsFetching(false);
@@ -29,6 +38,7 @@ const useMediaManager = () => {
 
   const addMediaFile = async (file: File, metadata: Record<string, any> = {}) => {
     setIsFetching(true);
+    setFetchError(null);
     const formData = new FormData();
     formData.append('file', file);
     formData.append('metadata', JSON.stringify(metadata));
@@ -41,7 +51,8 @@ const useMediaManager = () => {
       });
       await retrieveMediaFiles();
     } catch (error) {
-      setFetchError('Failed to upload file.');
+      const errorMessage = handleAxiosError(error);
+      setFetchError(`Failed to upload file: ${errorMessage}`);
       console.error(error);
     } finally {
       setIsFetching(false);
@@ -50,11 +61,13 @@ const useMediaManager = () => {
 
   const modifyMediaMetadata = async (fileId: string, newMetadata: Record<string, any>) => {
     setIsFetching(true);
+    setFetchError(null);
     try {
       await axios.put(`${process.env.REACT_APP_BACKEND_URL}/media/${fileId}/metadata`, { metadata: newMetadata });
       await retrieveMediaFiles();
     } catch (error) {
-      setFetchError('Failed to update metadata.');
+      const errorMessage = handleAxiosError(error);
+      setFetchError(`Failed to update metadata: ${errorMessage}`);
       console.error(error);
     } finally {
       setIsFetching(false);
@@ -65,7 +78,7 @@ const useMediaManager = () => {
     retrieveMediaFiles();
   }, []);
 
-  return { mediaFilesList, addMediaFile, modifyMediaMetadata, isLoading: isFetching, fetchError };
+  return { mediaFilesArray, addMediaFile, modifyMediaMetadata, isLoading: isFetchingList, fetchErrorList };
 };
 
 export default useMediaManager;
