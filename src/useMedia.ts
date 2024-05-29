@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 
 interface MediaFile {
   id: string;
@@ -16,9 +16,11 @@ const useMediaManager = () => {
 
   const handleAxiosError = (error: unknown) => {
     if (axios.isAxiosError(error)) {
-      return error.response?.data?.message || 'An unexpected error occurred';
+      const statusCode = error.response?.status;
+      const errorDetails = error.response?.data?.error || error.message;
+      return `Error ${statusCode}: ${errorDetails || 'An unexpected error occurred'}`;
     }
-    return 'Non-Axios error occurred';
+    return error instanceof Error ? error.message : 'An unknown error occurred';
   }
 
   const retrieveMediaFiles = async () => {
@@ -30,7 +32,7 @@ const useMediaManager = () => {
     } catch (error) {
       const errorMessage = handleAxiosError(error);
       setFetchError(`Failed to fetch media files: ${errorMessage}`);
-      console.error(error);
+      console.error(errorMessage);
     } finally {
       setIsFetching(false);
     }
@@ -53,7 +55,7 @@ const useMediaManager = () => {
     } catch (error) {
       const errorMessage = handleAxiosError(error);
       setFetchError(`Failed to upload file: ${errorMessage}`);
-      console.error(error);
+      console.error(errorMessage);
     } finally {
       setIsFetching(false);
     }
@@ -68,7 +70,7 @@ const useMediaManager = () => {
     } catch (error) {
       const errorMessage = handleAxiosError(error);
       setFetchError(`Failed to update metadata: ${errorMessage}`);
-      console.error(error);
+      console.error(errorMessage);
     } finally {
       setIsFetching(false);
     }
@@ -78,7 +80,7 @@ const useMediaManager = () => {
     retrieveMediaFiles();
   }, []);
 
-  return { mediaFilesArray, addMediaFile, modifyMediaMetadata, isLoading: isFetchingList, fetchErrorList };
+  return { mediaFilesList, addMediaFile, modifyMediaMetadata, isFetching, fetchError };
 };
 
 export default useMediaManager;
