@@ -2,63 +2,63 @@ require('dotenv').config();
 
 const express = require('express');
 const multer = require('multer');
-const { v4: generateUuid } = require('uuid');
+const { v4: generateUniqueIdentifier } = require('uuid');
 const aws = require('aws-sdk');
-const mimeTypeDetector = require('file-type');
+const detectMimeType = require('file-type');
 
-const s3Client = new aws.S3({
+const amazonS3Client = new aws.S3({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   region: process.env.AWS_REGION,
 });
 
-const memoryStorage = multer.memoryStorage();
-const fileUploader = multer({ storage: memoryStorage });
+const inMemoryStorageEngine = multer.memoryStorage();
+const fileUploadMiddleware = multer({ storage: inMemoryStorageEngine });
 
 const app = express();
 app.use(express.json());
 
-const uploadFileToS3 = async (file) => {
-  const detectedFileType = await mimeTypeDetector.fromBuffer(file.buffer);
-  const uniqueFileName = generateUuid();
-  const s3UploadParams = {
+const uploadFileToAmazonS3 = async (file) => {
+  const fileTypeDetails = await detectMimeType.fromBuffer(file.buffer);
+  const uniqueFileName = `${generateUniqueIdentifier()}.${fileTypeDetails.ext}`;
+  const s3FileUploadParams = {
     Bucket: process.env.AWS_BUCKET_NAME,
-    Key: `${uniqueFileName}.${detectedFileType.ext}`,
+    Key: uniqueFileName,
     Body: file.buffer,
-    ContentType: detectedFileType.mime,
+    ContentType: fileTypeDetails.mime,
   };
 
-  return s3Client.upload(s3UploadParams).promise();
+  return amazonS3Client.upload(s3FileUploadParams).promise();
 };
 
-const removeFileFromS3 = async (fileKey) => {
-  const s3DeleteParams = {
+const deleteFileFromAmazonS3 = async (fileIdentifier) => {
+  const s3FileDeleteParams = {
     Bucket: process.env.AWS_BUCKET_NAME,
-    Key: fileKey,
+    Key: fileIdentifier,
   };
 
-  return s3Client.deleteObject(s3DeleteParams).promise();
+  return amazonS3Client.deleteObject(s3FileDeleteParams).promise();
 };
 
-app.post('/media', fileUploader.single('file'), async (req, res) => {
+app.post('/media', fileUploadMiddleware.single('file'), async (req, res) => {
     try {
-        const uploadResult = await uploadFileToS3(req.file);
+        const uploadResult = await uploadFileToAmazonS3(req.file);
         res.status(201).send({
             message: "File uploaded successfully",
-            data: uploadResult,
+            fileInfo: uploadResult,
         });
-    } catch (error) {
-        console.error('Upload error:', error);
+    } catch (uploadError) {
+        console.error('Upload error:', uploadError);
         res.status(500).send({ error: "Failed to upload file." });
     }
 });
 
-app.delete('/media/:fileKey', async (req, res) => {
+app.delete('/media/:fileName', async (req, res) => {
     try {
-        await removeFileFromS3(req.params.fileKey);
+        await deleteFileFromAmazonS3(req.params.fileName);
         res.status(200).send({ message: "File deleted successfully." });
-    } catch (error) {
-        console.error('Deletion error:', error);
+    } catch (deletionError) {
+        console.error('Deletion error:', deletionError);
         res.status(500).send({ error: "Failed to delete file." });
     }
 });
