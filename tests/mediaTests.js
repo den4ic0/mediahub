@@ -2,51 +2,49 @@ const supertest = require('supertest');
 require('dotenv').config();
 const app = require('./app');
 
-const request = supertest.agent(app);
+const apiTestClient = supertest.agent(app);
 
 describe('Media Management Functionalities', () => {
 
-  it('should upload a file successfully', async () => {
-    const response = await request
+  it('should successfully upload a file', async () => {
+    const uploadResponse = await apiTestClient
       .post('/upload') 
-      .attach('file', 'path/to/test/file.jpg') 
+      .attach('mediaFile', 'path/to/test/file.jpg') 
       .set('Authorization', `Bearer ${process.env.TEST_AUTH_TOKEN}`);
     
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('fileUrl'); 
+    expect(uploadResponse.status).toBe(200);
+    expect(uploadResponse.body).toHaveProperty('uploadedFileUrl'); 
   });
 
-  it('should download a file successfully', async () => {
-    const fileUrl = '/path/to/uploaded/file.jpg'; 
-    const response = await request
-      .get(`/download/${fileUrl}`) 
+  it('should successfully download a file', async () => {
+    const uploadedFilePath = '/path/to/uploaded/file.jpg'; 
+    const downloadResponse = await apiTestClient
+      .get(`/download/${uploadedFilePath}`) 
       .set('Authorization', `Bearer ${process.env.TEST_AUTH_TOKEN}`);
 
-    expect(response.status).toBe(200);
-    expect(response.headers['content-type']).toBe('image/jpeg');
+    expect(downloadResponse.status).toBe(200);
+    expect(downloadResponse.headers['content-type']).toBe('image/jpeg');
   });
 
-  it('should retrieve file metadata successfully', async () => {
-    const fileId = 'some-file-id'; 
-    const response = await request
-      .get(`/metadata/${fileId}`) 
+  it('should successfully retrieve file metadata', async () => {
+    const targetFileId = 'specific-file-id'; 
+    const metadataResponse = await apiTestClient
+      .get(`/metadata/${targetFileId}`) 
       .set('Authorization', `Bearer ${process.env.TEST_AUTH_TOKEN}`);
 
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('id', fileId);
-    expect(response.body).toHaveProperty('size');
-    expect(response.body).toHaveProperty('createdAt');
+    expect(metadataResponse.status).toBe(200);
+    expect(metadataResponse.body).toHaveProperty('id', targetFileId);
+    expect(metadataResponse.body).toHaveProperty('fileSize');
+    expect(metadataResponse.body).toHaveProperty('creationDate');
   });
 
-  // Adding a new test case for deleting a file
-  it('should delete a file successfully', async () => {
-    const fileId = 'file-id-to-delete'; 
-    const response = await request
-      .delete(`/delete/${fileId}`) 
+  it('should successfully delete a file', async () => {
+    const fileToDeleteId = 'target-file-id-for-deletion'; 
+    const deletionResponse = await apiTestClient
+      .delete(`/delete/${fileToDeleteId}`) 
       .set('Authorization', `Bearer ${process.env.TEST_AUTH_TOKEN}`);
 
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('message', 'File deleted successfully');
+    expect(deletionResponse.status).toBe(200);
   });
 
 });
