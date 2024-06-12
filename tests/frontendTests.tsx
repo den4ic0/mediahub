@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, fireEvent, waitFor, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import MyAsyncComponent from './MyAsyncComponent';
+import MyAsync, { } from './MyAsyncComponent';
 import axios from 'axios';
 
 jest.mock('axios');
@@ -37,6 +37,8 @@ describe('MyAsyncComponent tests', () => {
     render(<MyAsyncComponent />);
 
     await waitFor(() => expect(axios.get).toHaveBeenCalledWith(`${API_URL}/data`));
-    expect(screen.getByText(/error/i)).toBeInTheDocument();
+
+    const errorMessage = screen.queryByText(/error/i);
+    expect(errorMessage).toBeInTheDocument();
   });
 });
