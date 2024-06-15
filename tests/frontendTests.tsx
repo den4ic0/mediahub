@@ -1,24 +1,29 @@
 import React from 'react';
 import { render, fireEvent, waitFor, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import MyAsync, { } from './MyAsyncComponent';
+import '@testing-library/jest-dom/extend-expect';
+import MyAsyncComponent from './MyAsyncComponent';
 import axios from 'axios';
 
 jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-const getEnvVariables = () => ({
-  API_URL: process.env.API_URL || 'http://localhost:3000',
-});
+// Improved environment variable handling
+const API_URL = process.env.API_URL || 'http://localhost:3000';
+
+// TypeScript Definitions for our mock data
+interface User {
+  id: number;
+  name: string;
+}
 
 describe('MyAsyncComponent tests', () => {
   it('Should fetch data successfully and display it', async () => {
-    const responseData = { data: [{ id: 1, name: 'John Doe' }] };
-    axios.get.mockResolvedValue(responseData);
-    const { API_URL } = getEnvVariables();
+    const responseData: { data: User[] } = { data: [{ id: 1, name: 'John Doe' }] };
+    mockedAxios.get.mockResolvedValue(responseData);
 
     render(<MyAsyncComponent />);
 
-    await waitFor(() => expect(axios.get).toHaveBeenCalledWith(`${API_URL}/data`));
+    await waitFor(() => expect(mockedAxios.get).toHaveBeenCalledWith(`${API_URL}/data`));
     expect(screen.getByText('John Doe')).toBeInTheDocument();
   });
 
@@ -31,14 +36,15 @@ describe('MyAsyncComponent tests', () => {
   });
 
   it('Should display error message when data fetching fails', async () => {
-    axios.get.mockRejectedValue(new Error('Failed to fetch'));
-    const { API_URL } = getEnvVariables();
+    mockedAxios.get.mockRejectedValue(new Error('Failed to fetch'));
 
     render(<MyAsyncComponent />);
 
-    await waitFor(() => expect(axios.get).toHaveBeenCalledWith(`${API_URL}/data`));
+    await waitFor(() => expect(mockedAxios.get).toHaveBeenCalledWith(`${API_URL}/data`));
 
-    const errorMessage = screen.queryByText(/error/i);
-    expect(errorMessage).toBeInTheDocument();
+    // Ensure you have a defined way to show errors in MyAsyncComponent
+    expect(screen.getByText(/failed to fetch/i)).toBeInTheDocument();
   });
+
+  // Add more tests here for additional functionality or edge conditions
 });
