@@ -1,9 +1,9 @@
 import React from 'react';
-import { render, fireEvent, waitFor, screen } from '@testing-library/react';
+import { render, waitFor, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import YourComponent from './YourComponent'; 
+import YourComponent from './YourComponent';
 import '@testing-library/jest-dom/extend-expect';
 
 process.env.REACT_APP_YOUR_API_URL = 'https://your-api.example.com';
@@ -27,10 +27,12 @@ describe('YourComponent', () => {
     });
     
     it('responds to user clicks', async () => {
+        // Assuming YourInlineEditComponent is defined and imported
         render(<YourInlineEditComponent />);
+        // Corrected typo in button variable name below
         const editButton = screen.getByRole('button', { name: /edit/i });
         
-        userEvent.click(editLINkButton);
+        userEvent.click(editButton);
         
         await waitFor(() => expect(screen.getByRole('textbox')).toBeInTheDocument());
     });
